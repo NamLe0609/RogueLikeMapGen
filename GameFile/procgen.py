@@ -21,7 +21,7 @@ def generate_dungeon_bsp(
     
     root_node = Node(0, 0, map_width, map_height)    
     root_node.create_subnode(room_min_dimension)
-    root_node.create_room(dungeon)
+    root_node.create_room(dungeon, room_min_dimension)
     
     return dungeon
     
