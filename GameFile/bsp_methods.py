@@ -1,4 +1,5 @@
 import math
+from posixpath import split
 import random
 from turtle import right, width
 from typing import List
@@ -20,13 +21,13 @@ class Node:
         self.height = height
         self.room = None
         
-    def create_room(self, dungeon: GameMap) -> None:
+    def create_room(self, dungeon: GameMap, room_min_dimension: int) -> None:
         #Recursively call function until node with no children found
         if (self.left != None) or (self.right != None):
             if (self.left != None):
-                self.left.create_room(dungeon)
+                self.left.create_room(dungeon, room_min_dimension)
             if (self.right != None):
-                self.right.create_room(dungeon)
+                self.right.create_room(dungeon, room_min_dimension)
             
             if (self.left != None) and (self.right != None):
                 for x, y in tunnel_between((self.left.__get_room().center), (self.right.__get_room().center)):
@@ -34,10 +35,10 @@ class Node:
         
         #Generate a room based on the node size
         else:
-            room_width = random.randint(1, self.width - 1)
-            room_height = random.randint(1, self.height - 1)
-            room_x = random.randint(self.x + 1, self.x2 - room_width)
-            room_y = random.randint(self.y + 1, self.y2 - room_height)
+            room_width = random.randint(room_min_dimension - 1, self.width - 1)
+            room_height = random.randint(room_min_dimension - 1, self.height - 1)
+            room_x = random.randint(self.x, self.x2 - room_width - 1)
+            room_y = random.randint(self.y, self.y2 - room_height - 1)
             self.room = RectangularRoom(room_x, room_y, room_width, room_height)
             dungeon.tiles[self.room.inner] = tile_types.floor
 
@@ -48,38 +49,42 @@ class Node:
         #then pick that as limit for cutting from both ends
         
         #Randomly choose direction for split
-        decision = random.randint(1,2)
+        splitVertical = bool(random.randint(0,1))
         
         #Check if ratio of room size is appropriate
-        if (self.width < self.height) and (self.width / self.height > 0.55):
-            #If ratio of width to height is too small, split height
-            decision = 1
-        elif (self.height < self.width) and (self.height / self.width > 0.55):
-            #If ratio of height to width is too small, split width
-            decision = 2
+        if (self.width > self.height) and (self.width / self.height >= 1.25):
+            #If ratio of width to height is too big, split vertically
+            splitVertical = True
+        elif (self.height > self.width) and (self.height / self.width >= 1.25):
+            #If ratio of height to width is too big, split width
+            splitVertical = False
             
-        if decision == 1:
+        max = (self.width if splitVertical else self.height) - room_min_dimension
+        if max <= room_min_dimension:
+            return False
+        split_at = random.randint(room_min_dimension, max)
+            
+        if splitVertical:
             #Split vertically
-            min, max = room_min_dimension, self.width - room_min_dimension
-            split_at = random.randint(min, max)
             self.left = Node(self.x, self.y ,split_at, self.height)
             self.right= Node(self.x + split_at, self.y ,self.width - split_at, self.height)
-        elif decision == 2:
+        else:
             #Split horizontally
-            min, max = room_min_dimension, self.height - room_min_dimension
-            split_at = random.randint(min, max)
             self.left = Node(self.x, self.y, self.width, split_at)
             self.right = Node(self.x, self.y + split_at, self.width, self.height - split_at)
+        return True
     
     def create_subnode(self, room_min_dimension: int) -> None:
         #If node has dimensions greater than twice the minimum size, split
         #call this function onto the children
-        if (self.width > room_min_dimension * 2) and (self.height > room_min_dimension * 2) :
-            self.__split(room_min_dimension)
+        if self.__split(room_min_dimension):
             self.left.create_subnode(room_min_dimension)
             self.right.create_subnode(room_min_dimension)
             
     def __get_room(self) -> RectangularRoom:
+        #Dig in all nodes down to their leaf to get a room
+        #If two room are available, pick one randomly
+        #Else return nothing
         if (self.room != None):
             return self.room
         else:
@@ -99,24 +104,3 @@ class Node:
                 return left_room
             else:
                 return right_room
-            
-
-    """ def connect_room(self, dungeon: GameMap) -> GameMap:
-        if (self.__has_offsprings()):
-            #If children are leaves, connect the rooms toghether
-            if (not self.left.__has_offsprings()) and (not self.right.__has_offsprings()):
-                dungeon.tiles[self.left.room.inner] = tile_types.floor
-                dungeon.tiles[self.right.room.inner] = tile_types.floor
-                for x, y in tunnel_between((self.left.room.center), (self.right.room.center)):
-                    dungeon.tiles[x, y] = tile_types.floor
-                    
-            #Else, recursively call connect_room on its children    
-            else:
-                self.left.connect_room(dungeon)
-                self.right.connect_room(dungeon)
-                
-            
-        return dungeon """
-            
-            
-    #def _connect_room(self, dungeon: GameMap):
