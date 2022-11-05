@@ -17,10 +17,17 @@ class Action:
         """
         raise NotImplementedError()
 
-#Class to deal with when "esc" is hit
-class EscapeAction(Action):
+#Class to deal with when "esc" or number buttons are hit
+class MapAction(Action):
+    def __init__(self, map_type: int) -> None:
+        super().__init__()
+        
+        self.map_type = map_type
+    
     def perform(self, engine: Engine, entity: Entity) -> None:
-        raise SystemExit
+        if engine.map_type == -1 and self.map_type == -1:
+            self.map_type = 0
+        engine.map_type = self.map_type
 
 #Class to deal with movements
 class MovementAction(Action):

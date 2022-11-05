@@ -4,8 +4,8 @@ from typing import Tuple
 class Entity:
     """
     An object that represents 
-    players, enemies, items
-    and many many more
+    players, enemies 
+    and more
     """
     def __init__(self, x: int, y:int, char: str, color: Tuple[int, int, int]):
         self.x = x
